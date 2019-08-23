@@ -1,0 +1,15 @@
+Package: dsr
+Type: Package
+Title: Compute Directly Standardized Rates, Ratios and Differences
+Version: 0.2.2
+Author: Matthew Kumar <mattkumar@gmail.com>
+Maintainer: Matthew Kumar <mattkumar@gmail.com>
+URL: https://github.com/mattkumar/dsr
+Description: A set of functions to compute and compare directly standardized rates, rate differences and ratios. A variety of user defined options for analysis (e.g confidence intervals) and formatting are included.
+Imports: stats, dplyr (>= 0.7.8) , rlang, utils, frailtypack
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr

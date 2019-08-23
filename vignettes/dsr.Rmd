@@ -1,0 +1,144 @@
+---
+title: "Directly Standardized Rates"
+author: "Matthew Kumar"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Directly Standardized Rates}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+The `dsr()` function computes crude and directly standardized event rates with a variety of user defined options. 
+
+The `dsrr()` function can be used to *compare* directly standardized event rates through rate differences or ratios.
+
+Standard errors for directly standardized rates are calculated using Chiang's (1961) method.
+
+## Pre-analysis
+The `dsr()` and `dsrr()` functions expect *aggregated* event counts and unit-times by
+
+- standardization variables (e.g. age, sex, etc).
+- subgroup variables, if any.
+
+If you are working with individual level data, you will need to aggregate it beforehand. The R package `dplyr` can do this quite easily.
+ 
+**Note:** For the standard or reference population, the data must be *aggregated* by the standardization variables and the unit-time variable name must labeled *pop*. See example below.  
+
+
+## Example Data
+
+To illustrate the functions of the package, we will recreate the analysis of calculating and comparing directly standardized mortality rates for the states of Alaska and Florida. 
+
+Additional details of the original analysis and data can be found [here.](http://support.sas.com/documentation/cdl/en/statug/68162/HTML/default/viewer.htm#statug_stdrate_examples01.htm) 
+
+```{r}
+#Alaska death counts and person-Years by Age and Sex
+df_a <- data.frame(age=rep(c('00-14','15-34','35-54','55-74','75+'),2),
+                   sex=rep(c('m','f'),c(5,5)),
+                   death=c(37,68,206,369,556,78,181,395,555,479),
+                   fu=c(81205,93662,108615,35139,5491,77203,85412,100386,32118,7701),
+                   state='Alaska'
+                   )
+
+#Florida death counts and pearson-years by Age and Sex
+df_f <- data.frame(age=rep(c('00-14','15-34','35-54','55-74','75+'),2),
+                   sex=rep(c('m','f'),c(5,5)),
+                   death=c(1189,2962,10279,26354,42443,906,1234,5630,18309,53489),
+                   fu=c(1505889,1972157,2197912,1383533,554632,1445831,1870430,2246737,1612270,868838),
+                   state='Florida'
+                    )
+
+#Merge state data together
+df_all <- rbind(df_a, df_f)
+
+knitr::kable(df_all, caption='State Specific Counts')
+
+#Standard population person-years by Age and Sex
+df_pop <- data.frame(age=rep(c('00-14','15-34','35-54','55-74','75+'),2),
+                     sex=rep(c('m','f'),c(5,5)),
+                     pop=c(30854207,40199647,40945028,19948630,6106351,
+                           29399168,38876268,41881451,22717040,10494416)
+                     )
+
+knitr::kable(df_pop, caption='US Person-Years')
+
+```
+
+## Directly Standardized Rates with dsr()
+
+Directly standardized Mortality Rates for Alaska and Flordia are presented here. A 95% confidence interval is requested using the gamma method. A rate multiplier of 1000 (i.e. per 1000) is also specified.
+```{r}
+library(dsr)
+my_results <- dsr(data=df_all,
+                  event=death,
+                  fu=fu,
+                  subgroup=state,
+                  age, sex,
+                  refdata=df_pop,
+                  method="gamma",
+                  sig=0.95,
+                  mp=1000,
+                  decimals=4)
+
+knitr::kable(my_results)
+```
+
+## Directly Standardized Rate Ratios with dsrr()
+
+A rate ratio comparing the directly standardized mortality rate of Alaska to Florida is requested. A 95% log-normal confidence interval is computed.
+
+```{r}
+my_results <- dsrr(data=df_all,
+                   event=death,
+                   fu=fu,
+                   subgroup=state,
+                   age, sex,
+                   refdata=df_pop,
+                   refgroup="Florida",
+                   estimate="ratio",
+                   sig=0.95,
+                   mp=1000,
+                   decimals=4)
+
+knitr::kable(my_results)
+```
+
+ 
+
+## Directly Standardized Rate Difference with dsrr()
+
+A rate difference comparing the directly standardized mortality rate of Alaska to Florida is requested. A 95% normal confidence interval is computed.
+```{r}
+my_results2 <- dsrr(data=df_all,
+                   event=death,
+                   fu=fu,
+                   subgroup=state,
+                   age, sex,
+                   refdata=df_pop,
+                   refgroup="Florida",
+                   estimate="difference",
+                   sig=0.95,
+                   mp=1000,
+                   decimals=4)
+
+knitr::kable(my_results2)
+```
+
+## References
+- Chiang C. Standard error of the age-adjusted death rate. US Department of Health, Education and Welfare: Vital Statistics Special Reports 1961;47:271-285.
+
+- Elandt-Johnson, R. C., and Johnson, N. L. (1980). Survival Models and Data Analysis. New York: John Wiley & Sons.
+
+- Fay, M.P., & Feuer, E.J. (1997). Confidence intervals for directly standardized rates: a method based on the gamma distribution. Statistics in Medicine,16, 791-801.
+ 

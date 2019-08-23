@@ -1,0 +1,107 @@
+---
+title: "Directly Standardized Rates for Recurrent Outcomes"
+author: "Matthew Kumar"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Directly Standardized Rates for Recurrent Outcomes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+The `dsrrec()` function computes directly standardized rates for recurrent and non-recurrent outcomes. 
+
+For recurrent outcomes, confidence intervals are computed using the negative binomial approach to variance estimation for directly standardized rates by [Stukel et al. (1994)](https://www.ncbi.nlm.nih.gov/pubmed/7997711). 
+
+For non-recurrent outcomes, the gamma distribution approach outlined in [Fay et al. (1997)](https://www.ncbi.nlm.nih.gov/pubmed/9131766) is used. 
+
+## Pre-Analysis
+The `dsrrec()` function expects **person-level** event counts and unit-times. On each person-level record, the following variables should be present:
+
+- standardization variables (e.g. age, sex, etc).
+- subgroup variables, if any.
+
+ 
+**Note:** For the standard or reference population, the data must be *aggregated* by the standardization variables and the unit-time variable name must labeled *pop*. See example below.
+
+## Example Data
+The `readmission` dataset from `frailtypack` contains rehospitalization times (in days) following surgery in patients diagnosed with colorectal cancer. We will use this data to examine directly (sex) standardized rates for rehospitalizations by Dukes' tumoral stage, a subgroup variable.
+
+```{r message=FALSE, warning=FALSE}
+#load necessary packages
+require(frailtypack)
+require(dplyr)
+data(readmission)
+```
+
+Since the data are in a person-period format, we'll have to calculate the total number of events and total observation time for each person. This will result in a single record per person that summarizes the relevant information.
+
+```{r message=FALSE, warning=FALSE}
+#Calculate total events and total observation times per person
+treadm <- readmission %>%
+          group_by(id) %>%
+          filter(max(enum)==enum ) %>%
+          mutate(events=enum-1,time=t.stop) %>%
+          select(id, events, time, sex, dukes)
+
+#View first 6 records
+knitr::kable(head(treadm), caption='Person-level Dataset')
+```
+
+The next step is to form the standardized or reference population, which for this analysis, is the total observation time across our study. Since we are standardizing by sex, we'll compute total observation time by sex. As noted previously, the unit-time must be labelled **pop**.
+
+```{r message=FALSE, warning=FALSE}
+#Make the reference data
+tref <- treadm %>% 
+        group_by(sex) %>% 
+        mutate(pop=sum(time)) %>% 
+        select(sex, pop) %>% 
+        distinct(sex, pop)
+
+
+#View
+knitr::kable(tref, caption='Reference Dataset')
+
+```
+
+## Directly Standardized Rates for Recurrent Outcomes with dsrrec()
+
+Finally, lets calculate directly (sex) standardized rates for rehospitalizations by Dukes' tumoral stage. 
+
+```{r message=FALSE, warning=FALSE}
+require(dsr)
+
+my_analysis <- dsrrec(data=treadm,
+                       event=events,
+                       fu=time,
+                       refdata=tref,
+                       subgroup=dukes,
+                       sex,
+                       sig=0.95,
+                       mp=1000,
+                       decimals=3)
+
+```
+ 
+```{r message=FALSE, warning=FALSE}
+knitr::kable(my_analysis, caption='Analysis Results') 
+
+```
+
+By default, confidence intervals for recurrent (NB) and non-current (Gamma) outcomes are calculated.
+
+## References
+
+- Stukel, T. A., Glynn, R. J., Fisher, E. S., Sharp, S. M., Lu-Yao, G and Wennberg, J. E. (1994). Standardized rates of recurrent outcomes. Statistics in Medicine, 13, 1781-1791.
+
+- Fay, M.P., & Feuer, E.J. (1997). Confidence intervals for directly standardized rates: a method based on the gamma distribution. Statistics in Medicine, 16, 791-801.
