@@ -35,6 +35,8 @@ If you are working with individual level data, you will need to aggregate it bef
  
 **Note:** For the standard or reference population, the data must be *aggregated* by the standardization variables and the unit-time variable name must labeled *pop*. See example below.  
 
+Reference weights use the total population in `refdata`. They are not rescaled when standardization variable combinations are absent from a subgroup in the sample data.
+
 
 ## Example Data
 
