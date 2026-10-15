@@ -62,6 +62,7 @@ dsrr <- function(data, event, fu, subgroup, ..., refdata, estimate, refgroup, mp
 
 
   #Compute crude and standardized rates and variances
+  divisor <- sum(refdata$pop)
   all_data_st = data %>%
     left_join(refdata) %>%
     group_by(!!subgroup) %>%
@@ -69,7 +70,7 @@ dsrr <- function(data, event, fu, subgroup, ..., refdata, estimate, refgroup, mp
            d=sum(!!fu),
            cr_rate=n/d,
            cr_var=n/d^2,
-           wts=pop/sum(pop),
+           wts=pop/divisor,
            st_rate=sum(wts*(!!event/!!fu)),
            st_var=sum(as.numeric((wts^2)*(!!event/(!!fu )^2)))) %>%
     distinct(!!subgroup, .keep_all=TRUE) %>%
